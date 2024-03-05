@@ -4,40 +4,33 @@ ob_start();
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-// Include necessary files
 include("config.php");
 include("auth.php");
-
-// Check if form is submitted for approval or cancellation
+if (!$_SESSION['iuid']) {
+    header("location: index.php");
+}
 
 if (isset($_POST['submit_approval'])) {
-    // Process approval
     $update_id = $_POST['update_id'];
     $reason = $db->real_escape_string($_POST['reason']);
     $sql = "UPDATE website_update SET status=2, reason='$reason' WHERE website_update_id='$update_id'";
     $db->query($sql);
 } else if (isset($_POST['submit_for_process'])) {
-    // Process cancellation
     $update_id = $_POST['update_id'];
     $reason = $db->real_escape_string($_POST['reason']);
     $sql = "UPDATE website_update SET status=1, reason='$reason' WHERE website_update_id='$update_id'";
     $db->query($sql);
-}
- else if (isset($_POST['submit_for_revision'])) {
-    // Process cancellation
+} else if (isset($_POST['submit_for_revision'])) {
     $update_id = $_POST['update_id'];
     $sql = "UPDATE website_update SET status=3 WHERE website_update_id='$update_id'";
     $db->query($sql);
-}
- else if (isset($_POST['submit_cancel'])) {
-    // Process cancellation
+} else if (isset($_POST['submit_cancel'])) {
     $update_id = $_POST['update_id'];
     $reason = $db->real_escape_string($_POST['reason']);
     $sql = "UPDATE website_update SET status=4, reason='$reason' WHERE website_update_id='$update_id'";
     $db->query($sql);
 }
 
-// Fetch website updates data
 $sql = "SELECT * FROM website_update";
 if ($_SESSION['iupriv'] != 0) {
     $id = $_SESSION['iuid'];
@@ -70,7 +63,12 @@ $result = $db->query($sql);
             <a class="navbar-brand logo" href="#">IHOMS Website Update</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a href="dashboard.php">Dashboard</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.php">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="website-lists.php">Lists</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -78,7 +76,7 @@ $result = $db->query($sql);
     <main class="page contact-page">
         <section class="">
             <div class="mx-5">
-                <h2 class="my-4">Website Update Forms</h2>
+                <h2 class="my-4">Website Update List</h2>
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -92,6 +90,13 @@ $result = $db->query($sql);
                             <th>Print Word Document</th>
                             <th>Edit</th>
                             <th>Action</th>
+                            <?php
+                            if ($_SESSION['iupriv'] != 3) {
+                            ?>
+                                <th>Logs</th>
+                            <?php
+                            }
+                            ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -130,29 +135,31 @@ $result = $db->query($sql);
 
                                 echo "<td>";
                                 $file_paths = json_decode($row['file_paths']);
+                                echo "<ol>";
                                 foreach ($file_paths as $path) {
                                     $filename = basename($path);
-                                    echo "<a href='$path' download>$filename</a><br>";
+                                    echo "<li><a class='my-3 py-3' href='$path' download>$filename</a></li>";
                                 }
+                                echo "</ol>";
+
                                 echo "</td>";
                                 echo "<td><a class='btn btn-success' target='_blank' href='generate_print.php?id=" . $row['website_update_id'] . "&filename=" . urlencode($row['title']) . ".docx'>Print</a></td>";
                                 if ($row['status'] == 0 || $row['status'] == 3) {
-                                echo "<td><a href='/website_update/update_website_update.php?id=" . $row['website_update_id'] . "' class='btn btn-success'>Edit</a></td>";
-                                }else{
+                                    echo "<td><a href='/website_update/update_website_update.php?id=" . $row['website_update_id'] . "' class='btn btn-success'>Edit</a></td>";
+                                } else {
                                     echo "<td><button class='btn btn-success' disabled>Edit</button></td>";
                                 }
                                 echo "<td>";
-                                // Display buttons based on status
                                 if ($row['status'] == 0) {
-                                    // Approval and cancellation form
                                     echo "<form method='post'>";
                                     echo "<input type='hidden' name='update_id' value='" . $row['website_update_id'] . "'>";
-                                    echo "<textarea name='reason' placeholder='Reason for Approval/Cancellation' required></textarea><br>";
-                                    echo "<button type='submit' name='submit_approval' class='btn btn-success'>Approve</button>&nbsp;";
-                                    echo "<button type='submit' name='submit_for_revision' class='btn btn-success'>For Revision</button>&nbsp;";
-                                    echo "<button type='submit' name='submit_for_process' class='btn btn-success'>For Revision</button>&nbsp;";
-
-                                    echo "<button type='submit' name='submit_cancel' class='btn btn-danger'>Decline</button>";
+                                    echo "<textarea name='reason' class='form-control' placeholder='Reason for Approval/Cancellation' required></textarea><br>";
+                                    if ($_SESSION['iupriv'] != 3) {
+                                        echo "<button type='submit' name='submit_approval' class='btn btn-success m-2'>Approve</button>&nbsp;";
+                                        echo "<button type='submit' name='submit_for_revision' class='btn btn-success m-2'>For Revision</button>&nbsp;";
+                                        echo "<button type='submit' name='submit_for_process' class='btn btn-success m-2'>For Processing</button>&nbsp;";
+                                    }
+                                    echo "<button type='submit' name='submit_cancel' class='btn btn-danger m-2'>Decline</button>";
                                     echo "</form>";
                                 } else if ($row['status'] == 2) {
                                     echo 'Approved<br>';
@@ -163,11 +170,21 @@ $result = $db->query($sql);
                                 } else if ($row['status'] == 1) {
                                     echo 'Processing<br>';
                                     echo $row['reason'];
-                                }else if ($row['status'] == 4) {
+                                } else if ($row['status'] == 4) {
                                     echo 'Declined<br>';
                                     echo $row['reason'];
                                 } else {
                                     echo "N/A";
+                                }
+                                echo "</td>";
+                                echo "<td>";
+                                $sql_logs = "SELECT COUNT(*) AS log_count FROM website_update_logs WHERE website_update_id='" . $row['website_update_id'] . "'";
+                                $result_logs = $db->query($sql_logs);
+                                if ($result_logs) {
+                                    $row_logs = $result_logs->fetch_assoc();
+                                    if ($row_logs['log_count'] > 0) {
+                                        echo "<a class='btn btn-info' href='website_update_logs.php?update_id=" . $row['website_update_id'] . "'>Logs</a>";
+                                    }
                                 }
                                 echo "</td>";
                                 echo "</tr>";
@@ -186,8 +203,5 @@ $result = $db->query($sql);
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pikaday/1.6.1/pikaday.min.js"></script>
     <script src="assets/js/theme.js"></script>
 </body>
-<script>
-
-</script>
 
 </html>

@@ -1,6 +1,8 @@
 <?php
 session_start();
-
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 include("config.php");
 include("auth.php");
 
@@ -16,7 +18,8 @@ if (isset($_GET['id'])) {
 
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        $date_requested = $row['date_requested'];
+        $date_requested =
+            $row['title'];
         $title = $row['title'];
         $source = $row['source'];
         $type_of_file = $row['type_of_file'];
@@ -28,17 +31,18 @@ if (isset($_GET['id'])) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $date_requested = $db->real_escape_string($_POST['date_requested']);
     $title = $db->real_escape_string($_POST['title']);
     $source = $db->real_escape_string($_POST['source']);
     $type_of_file = $db->real_escape_string($_POST['type_of_file']);
     $type_of_change = $db->real_escape_string($_POST['type_of_change']);
+    $user_id = $_SESSION['iuid'];
+    $status = ''; // You need to define $status appropriately
+    $reason = ''; // You need to define $reason appropriately
 
     if (!empty($_FILES['file_upload']['name'][0])) {
         foreach ($file_paths as $file) {
             $destination_directory = "failed/";
             $filename = basename($file);
-
             $new_file_path = $destination_directory . $filename;
 
             if (rename($file, $new_file_path)) {
@@ -47,6 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 echo "Error: Failed to move the file.";
             }
         }
+
         $file_upload_dir = "uploads/";
         $valid_upload = true;
         $new_file_paths = array();
@@ -75,10 +80,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $all_file_paths = $new_file_paths;
             $file_paths_json = json_encode($all_file_paths);
 
-            $sql = "UPDATE website_update SET date_requested='$date_requested', title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', file_paths='$file_paths_json', status = 0 WHERE website_update_id='$update_id'";
+            $sql = "UPDATE website_update SET title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', file_paths='$file_paths_json', status = 0 WHERE website_update_id='$update_id'";
             if ($db->query($sql) === TRUE) {
-                echo "Record updated successfully";
-                $sql_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type) VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths_json', '$status', '$reason', 'Update')";
+                echo "Record updated suceecessfully";
+                $sql_log = "INSERT INTO website_update_logs (website_update_id,  title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type, date_requested) VALUES ('$update_id',  '$title', '$source', '$type_of_file', '$type_of_change', '$user_id' , '$file_paths_json', '$status', '$reason', 'Update', '$date_requested')";
                 if ($db->query($sql_log) === TRUE) {
                     echo "Log entry added successfully";
                 } else {
@@ -89,10 +94,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
     } else {
-        $sql = "UPDATE website_update SET date_requested='$date_requested', title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', status = 0 WHERE website_update_id='$update_id'";
+        $sql = "UPDATE website_update SET title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', status = 0 WHERE website_update_id='$update_id'";
         if ($db->query($sql) === TRUE) {
             echo "Record updated successfully";
-            $sql_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type) VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths_json', '$status', '$reason' , 'Update')";
+            $sql_log = "INSERT INTO website_update_logs (website_update_id, title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type, date_requested) VALUES ('$update_id', '$title', '$source', '$type_of_file', '$type_of_change', '$user_id', '$file_paths_json', '$status', '$reason' , 'Update', '$date_requested')";
             if ($db->query($sql_log) === TRUE) {
                 echo "Log entry added successfully";
             } else {
@@ -102,6 +107,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             echo "Error updating record: " . $db->error;
         }
     }
+    header("location: website-lists.php");
 }
 
 function reArrayFiles(&$file_post)
@@ -142,7 +148,12 @@ function reArrayFiles(&$file_post)
             <a class="navbar-brand logo" href="#">IHOMS Website Update</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a href="dashboard.php">Dashboard</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.php">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="website-lists.php">Lists</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -156,10 +167,6 @@ function reArrayFiles(&$file_post)
                 </div>
                 <form method="post" enctype="multipart/form-data">
                     <input type="hidden" name="update_id" value="<?php echo $update_id; ?>">
-                    <div class="mb-3">
-                        <label class="form-label" for="date_requested">Date Requested</label>
-                        <input class="form-control item" type="date" id="date_requested" name="date_requested" value="<?php echo $date_requested; ?>" required>
-                    </div>
                     <div class="mb-3">
                         <label class="form-label" for="title">Title</label>
                         <input class="form-control item" type="text" id="title" name="title" value="<?php echo $title; ?>" required>

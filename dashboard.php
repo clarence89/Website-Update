@@ -1,83 +1,77 @@
 <?php
-// Start the session if not already started
 session_start();
-
-// Include necessary files
 include("config.php");
 include("auth.php");
 
-// Redirect if user is already logged in
 if (!$_SESSION['iuid']) {
-        header("location: index.php");
+    header("location: index.php");
 }
 
-// Allowed file types
 $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt');
 
-// Process form submission
 if ($_POST['date_requested'] && $_POST['title'] && $_POST['source'] && $_POST['type_of_file'] && $_POST['type_of_change']) {
-    // Retrieve form data
-    $date_requested = $db->real_escape_string($_POST['date_requested']);
+    $date_requested = (new DateTime())->format('Y-m-d H:i:s');
     $title = $db->real_escape_string($_POST['title']);
     $source = $db->real_escape_string($_POST['source']);
     $type_of_file = $db->real_escape_string($_POST['type_of_file']);
     $type_of_change = $db->real_escape_string($_POST['type_of_change']);
     $requested_by = $db->real_escape_string($_SESSION['iuid']);
 
-    // Handle file uploads
-    $file_upload_dir = "uploads/"; // Adjusted file upload directory path
+    $file_upload_dir = "uploads/";
     $file_paths = array();
-    $valid_upload = true; // Flag to track valid file uploads
+    $valid_upload = true;
+    $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt');
     if (isset($_FILES['file_upload'])) {
         $file_array = reArrayFiles($_FILES['file_upload']);
         foreach ($file_array as $file) {
-            // Check if the file was uploaded successfully
             if (!empty($file['tmp_name']) && $file['error'] == UPLOAD_ERR_OK) {
                 $filename = $file['name'];
                 $file_tmpname = $file['tmp_name'];
                 $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-                // Append a unique identifier (e.g., timestamp) to the filename
-                $unique_filename = uniqid() . '_' . $filename; // You can use other methods for uniqueness
+                $unique_filename = uniqid() . '_' . $filename;
 
-                // Check if file type is allowed
                 if (in_array($file_ext, $allowed_types)) {
                     $destination = $file_upload_dir . $unique_filename;
 
-                    // Move the uploaded file to the destination
                     if (move_uploaded_file($file_tmpname, $destination)) {
                         $file_paths[] = $destination;
                     } else {
                         echo "Error: Failed to move uploaded file.";
-                        $valid_upload = false; // Set the flag to false if file move fails
+                        $valid_upload = false;
                     }
                 } else {
                     echo "Error: Only JPG, JPEG, PNG, GIF, PDF, DOC, DOCX, XLS, XLSX, CSV, TXT files are allowed.";
-                    $valid_upload = false; // Set the flag to false if file type is not allowed
+                    $valid_upload = false;
                 }
             } else {
                 echo "Error: File upload error.";
-                $valid_upload = false; // Set the flag to false if file upload error occurs
+                $valid_upload = false;
             }
         }
     }
 
-    // If all file uploads are valid, proceed to insert data into the database
     if ($valid_upload) {
-        // Convert file paths array to JSON string
         $file_paths_json = json_encode($file_paths);
 
-        // Insert form data into database
         $sql = "INSERT INTO website_update (date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths) VALUES ('$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths_json')";
         if ($db->query($sql) === TRUE) {
             echo "New record created successfully";
+            $update_id = $db->insert_id;
+            $status = "pending";
+            $reason = "";
+            $sql_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type) VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths_json', '$status', '$reason', 'Insert')";
+            if ($db->query($sql_log) === TRUE) {
+                echo "Log entry added successfully";
+            } else {
+                echo "Error adding log entry: " . $db->error;
+            }
         } else {
             echo "Error: " . $sql . "<br>" . $db->error;
         }
     }
 }
 
-// Function to re-arrange the files array
 function reArrayFiles(&$file_post)
 {
     $file_ary = array();
@@ -116,7 +110,12 @@ function reArrayFiles(&$file_post)
             <a class="navbar-brand logo" href="#">IHOMS Website Update</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"></li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.php">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="website-lists.php">Lists</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -128,10 +127,6 @@ function reArrayFiles(&$file_post)
                     <h2>Data Entry Form</h2>
                 </div>
                 <form method="post" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <label class="form-label" for="date_requested">Date Requested</label>
-                        <input class="form-control item" type="date" id="date_requested" name="date_requested" required>
-                    </div>
                     <div class="mb-3">
                         <label class="form-label" for="title">Title</label>
                         <input class="form-control item" type="text" id="title" name="title" required>
