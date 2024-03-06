@@ -18,13 +18,14 @@ if (isset($_GET['id'])) {
 
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        $date_requested =
-            $row['title'];
+        $date_requested = $row['date_requested'];
         $title = $row['title'];
         $source = $row['source'];
         $type_of_file = $row['type_of_file'];
         $type_of_change = $row['type_of_change'];
         $file_paths = json_decode($row['file_paths']);
+        // $reason = $row['reason'];
+        $reason = 'Request Update';
     } else {
         echo "Update not found";
     }
@@ -36,8 +37,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $type_of_file = $db->real_escape_string($_POST['type_of_file']);
     $type_of_change = $db->real_escape_string($_POST['type_of_change']);
     $user_id = $_SESSION['iuid'];
-    $status = ''; // You need to define $status appropriately
-    $reason = ''; // You need to define $reason appropriately
 
     if (!empty($_FILES['file_upload']['name'][0])) {
         foreach ($file_paths as $file) {
@@ -97,7 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sql = "UPDATE website_update SET title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', status = 0 WHERE website_update_id='$update_id'";
         if ($db->query($sql) === TRUE) {
             echo "Record updated successfully";
-            $sql_log = "INSERT INTO website_update_logs (website_update_id, title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type, date_requested) VALUES ('$update_id', '$title', '$source', '$type_of_file', '$type_of_change', '$user_id', '$file_paths_json', '$status', '$reason' , 'Update', '$date_requested')";
+            $sql_log = "INSERT INTO website_update_logs (website_update_id, title, source, type_of_file, type_of_change, requested_by, status, reason, log_type, date_requested) VALUES ('$update_id', '$title', '$source', '$type_of_file', '$type_of_change', '$user_id',  '$status', '$reason' , 'Update', '$date_requested')";
             if ($db->query($sql_log) === TRUE) {
                 echo "Log entry added successfully";
             } else {

@@ -11,30 +11,79 @@ if (!$_SESSION['iuid']) {
 }
 
 if (isset($_POST['submit_approval'])) {
+    $status = 2;
+} elseif (isset($_POST['submit_for_process'])) {
+    $status = 1;
+} elseif (isset($_POST['submit_for_revision'])) {
+    $status = 3;
+} elseif (isset($_POST['submit_cancel'])) {
+    $status = 4;
+}
+
+if (isset($status)) {
     $update_id = $_POST['update_id'];
     $reason = $db->real_escape_string($_POST['reason']);
-    $sql = "UPDATE website_update SET status=2, reason='$reason' WHERE website_update_id='$update_id'";
-    $db->query($sql);
-} else if (isset($_POST['submit_for_process'])) {
-    $update_id = $_POST['update_id'];
-    $reason = $db->real_escape_string($_POST['reason']);
-    $sql = "UPDATE website_update SET status=1, reason='$reason' WHERE website_update_id='$update_id'";
-    $db->query($sql);
-} else if (isset($_POST['submit_for_revision'])) {
-    $update_id = $_POST['update_id'];
-    $sql = "UPDATE website_update SET status=3 WHERE website_update_id='$update_id'";
-    $db->query($sql);
-} else if (isset($_POST['submit_cancel'])) {
-    $update_id = $_POST['update_id'];
-    $reason = $db->real_escape_string($_POST['reason']);
-    $sql = "UPDATE website_update SET status=4, reason='$reason' WHERE website_update_id='$update_id'";
-    $db->query($sql);
+
+    // Fetch existing data from website_update table
+    $sql_select_update = "SELECT * FROM website_update WHERE website_update_id = '$update_id'";
+    $result_update = $db->query($sql_select_update);
+
+    if ($result_update && $result_update->num_rows > 0) {
+        $row_update = $result_update->fetch_assoc();
+        $previous_status = $row_update['status'];
+
+        // Update status and reason in website_update table
+        $sql_update_status = "UPDATE website_update SET status='$status', reason='$reason' WHERE website_update_id='$update_id'";
+        $db->query($sql_update_status);
+
+        // Insert log into website_update_logs
+        $date_requested = $row_update['date_requested'];
+        $title = $row_update['title'];
+        $source = $row_update['source'];
+        $type_of_file = $row_update['type_of_file'];
+        $type_of_change = getStatusName($status); // Function to get the status name based on status code
+        $requested_by = $row_update['requested_by'];
+        $file_paths = $row_update['file_paths'];
+        $created_at = date("Y-m-d H:i:s");
+        $log_type = $type_of_change;
+
+        $sql_insert_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, created_at, log_type)
+                           VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths', '$status', '$reason', '$created_at', '$log_type')";
+        $db->query($sql_insert_log);
+    }
+}
+
+// Function to get status name based on status code
+function getStatusName($status_code)
+{
+    switch ($status_code) {
+        case 1:
+            return "Processing";
+        case 2:
+            return "Approved";
+        case 3:
+            return "For Revision";
+        case 4:
+            return "Declined";
+        default:
+            return "N/A";
+    }
 }
 
 $sql = "SELECT * FROM website_update";
-if ($_SESSION['iupriv'] != 0) {
+
+if ($_SESSION['iupriv'] == 3) {
     $id = $_SESSION['iuid'];
     $sql .= " WHERE requested_by=$id";
+} else {
+    $sql .= " ORDER BY CASE status
+                    WHEN 1 THEN 0
+                    WHEN 0 THEN 1
+                    WHEN 3 THEN 2
+                    WHEN 2 THEN 3
+                    WHEN 4 THEN 4
+                    ELSE 5
+                    END";
 }
 if (!$_SESSION['iuid']) {
     header("location: index.php");
@@ -145,38 +194,71 @@ $result = $db->query($sql);
                                 echo "</td>";
                                 echo "<td><a class='btn btn-success' target='_blank' href='generate_print.php?id=" . $row['website_update_id'] . "&filename=" . urlencode($row['title']) . ".docx'>Print</a></td>";
                                 if ($row['status'] == 0 || $row['status'] == 3) {
-                                    echo "<td><a href='/website_update/update_website_update.php?id=" . $row['website_update_id'] . "' class='btn btn-success'>Edit</a></td>";
+                                    echo "<td><a href='/website_update/update_website_update.php?id=" . $row['website_update_id'] . "' class='btn btn-success m-1'>Edit</a></td>";
                                 } else {
-                                    echo "<td><button class='btn btn-success' disabled>Edit</button></td>";
+                                    echo "<td><button class='btn btn-success m-1' disabled>Edit</button></td>";
                                 }
                                 echo "<td>";
                                 if ($row['status'] == 0) {
-                                    echo "<form method='post'>";
-                                    echo "<input type='hidden' name='update_id' value='" . $row['website_update_id'] . "'>";
-                                    echo "<textarea name='reason' class='form-control' placeholder='Reason for Approval/Cancellation' required></textarea><br>";
+                                    echo '<form method="post">';
+                                    echo '<input type="hidden" name="update_id" value="' . $row['website_update_id'] . '">';
+                                    echo '<textarea name="reason" class="form-control" placeholder="Remarks"></textarea><br>';
                                     if ($_SESSION['iupriv'] != 3) {
-                                        echo "<button type='submit' name='submit_approval' class='btn btn-success m-2'>Approve</button>&nbsp;";
-                                        echo "<button type='submit' name='submit_for_revision' class='btn btn-success m-2'>For Revision</button>&nbsp;";
-                                        echo "<button type='submit' name='submit_for_process' class='btn btn-success m-2'>For Processing</button>&nbsp;";
+                                        echo '<button type="submit" name="submit_for_revision" class="btn btn-warning m-1">For Revision</button>&nbsp;';
+                                        echo '<button type="submit" name="submit_for_process" class="btn btn-info m-1">For Processing</button>&nbsp;';
+                                        echo '<button type="submit" name="submit_cancel" class="btn btn-danger m-1">Decline</button>';
+                                    } else {
+                                        echo '<button type="submit" name="submit_cancel" class="btn btn-danger m-1">Cancel</button>';
                                     }
-                                    echo "<button type='submit' name='submit_cancel' class='btn btn-danger m-2'>Decline</button>";
-                                    echo "</form>";
-                                } else if ($row['status'] == 2) {
-                                    echo 'Approved<br>';
-                                    echo $row['reason'];
-                                } else if ($row['status'] == 3) {
-                                    echo 'For Revision<br>';
-                                    echo $row['reason'];
-                                } else if ($row['status'] == 1) {
-                                    echo 'Processing<br>';
-                                    echo $row['reason'];
-                                } else if ($row['status'] == 4) {
-                                    echo 'Declined<br>';
-                                    echo $row['reason'];
+                                    echo '</form>';
+
+                                    echo '</div>';
+                                } elseif ($row['status'] == 2) {
+                                    echo '<div class="alert alert-success" role="alert">Approved</div>';
+                                    if (!empty($row['reason'])) {
+                                        echo '<p class="font-weight-bold">Remarks:</p>';
+                                        echo '<p>' . $row['reason'] . '</p>';
+                                    }
+                                } elseif ($row['status'] == 3) {
+                                    echo '<div class="alert alert-warning" role="alert">For Revision</div>';
+                                    if (!empty($row['reason'])) {
+                                        echo '<p class="font-weight-bold">Remarks:</p>';
+                                        echo '<p>' . $row['reason'] . '</p>';
+                                    }
+                                } elseif ($row['status'] == 1) {
+                                    echo '<div class="alert alert-info" role="alert">Processing</div>';
+                                    if (!empty($row['reason'])) {
+                                        echo '<p class="font-weight-bold">Remarks:</p>';
+                                        echo '<p>' . $row['reason'] . '</p>';
+                                    }
+                                    echo '<form method="post">';
+                                    echo '<input type="hidden" name="update_id" value="' . $row['website_update_id'] . '">';
+                                    echo '<div class="form-group">';
+                                    echo '<label for="reasonTextarea">Remarks:</label>';
+                                    echo '<textarea name="reason" id="reasonTextarea" class="form-control" rows="3"></textarea>';
+                                    echo '</div>';
+                                    echo '<div class="text-right">';
+                                    if ($_SESSION['iupriv'] != 3) {
+                                        echo '<button type="submit" name="submit_approval" class="btn btn-success m-1">Done</button>';
+                                        echo '<button type="submit" name="submit_cancel" class="btn btn-danger m-1">Decline</button>';
+                                    }
+                                    else{
+                                        echo '<button type="submit" name="submit_cancel" class="btn btn-danger m-1">Cancel</button>';
+                                    }
+
+                                    echo '</div>';
+                                    echo '</form>';
+                                } elseif ($row['status'] == 4) {
+                                    echo '<div class="alert alert-danger" role="alert">Declined</div>';
+                                    if (!empty($row['reason'])) {
+                                        echo '<p class="font-weight-bold">Remarks:</p>';
+                                        echo '<p>' . $row['reason'] . '</p>';
+                                    }
                                 } else {
-                                    echo "N/A";
+                                    echo 'N/A';
                                 }
                                 echo "</td>";
+                                if ($_SESSION['iupriv'] != 3) {
                                 echo "<td>";
                                 $sql_logs = "SELECT COUNT(*) AS log_count FROM website_update_logs WHERE website_update_id='" . $row['website_update_id'] . "'";
                                 $result_logs = $db->query($sql_logs);
@@ -187,6 +269,7 @@ $result = $db->query($sql);
                                     }
                                 }
                                 echo "</td>";
+                            }
                                 echo "</tr>";
                             }
                         } else {
