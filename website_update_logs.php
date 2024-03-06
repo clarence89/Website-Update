@@ -1,27 +1,27 @@
 <?php
-        session_start();
-        ob_start();
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
-        error_reporting(E_ALL);
-        include("config.php");
-        include("auth.php");
+session_start();
+ob_start();
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+include("config.php");
+include("auth.php");
 
-        if (!isset($_SESSION['iuid'])) {
-            header("location: index.php");
-            exit();
-        }
+if (!isset($_SESSION['iuid'])) {
+    header("location: index.php");
+    exit();
+}
 
-        if (!isset($_GET['update_id'])) {
-            echo "Update ID not provided.";
-            exit();
-        }
+if (!isset($_GET['update_id'])) {
+    echo "Update ID not provided.";
+    exit();
+}
 
-        $update_id = $db->real_escape_string($_GET['update_id']);
+$update_id = $db->real_escape_string($_GET['update_id']);
 
-        $sql_logs = "SELECT wul.*, u.fname, u.lname FROM website_update_logs AS wul LEFT JOIN users AS u ON wul.requested_by = u.userid WHERE wul.website_update_id = '$update_id' ORDER BY wul.created_at DESC";
-        $result_logs = $db->query($sql_logs);
-        ?>
+$sql_logs = "SELECT wul.*, u.fname, u.lname FROM website_update_logs AS wul LEFT JOIN users AS u ON wul.requested_by = u.userid WHERE wul.website_update_id = '$update_id' ORDER BY wul.created_at DESC";
+$result_logs = $db->query($sql_logs);
+?>
 
 <!DOCTYPE html>
 <html>
@@ -84,10 +84,20 @@
                         echo "<td>" . $row['status'] . "</td>";
                         echo "<td>" . $row['reason'] . "</td>";
                         echo "<td>" . $row['log_type'] . "</td>";
+                        // Split file paths by comma and create links for each file
+                        echo "<td>";
+                        $file_paths = json_decode($row['file_paths']);
+                                echo "<ol>";
+                                foreach ($file_paths as $path) {
+                                    $filename = basename($path);
+                                    echo "<li><a class='my-3 py-3' href='$path' download>$filename</a></li>";
+                                }
+                                echo "</ol>";
+                        echo "</td>";
                         echo "</tr>";
                     }
                 } else {
-                    echo "<tr><td colspan='9'>No logs found.</td></tr>";
+                    echo "<tr><td colspan='10'>No logs found.</td></tr>";
                 }
                 ?>
             </tbody>

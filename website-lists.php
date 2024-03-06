@@ -273,7 +273,7 @@ $result = $db->query($sql);
                                 echo "</tr>";
                             }
                         } else {
-                            echo "<tr><td colspan='8'>No data found</td></tr>";
+                            echo "<tr><td colspan='11'>No data found</td></tr>";
                         }
                         ?>
                     </tbody>

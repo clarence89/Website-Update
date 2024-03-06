@@ -2,75 +2,16 @@
 session_start();
 include("config.php");
 include("auth.php");
-
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 if (!$_SESSION['iuid']) {
     header("location: index.php");
 }
 
 $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt');
 
-if ($_POST['date_requested'] && $_POST['title'] && $_POST['source'] && $_POST['type_of_file'] && $_POST['type_of_change']) {
-    $date_requested = (new DateTime())->format('Y-m-d H:i:s');
-    $title = $db->real_escape_string($_POST['title']);
-    $source = $db->real_escape_string($_POST['source']);
-    $type_of_file = $db->real_escape_string($_POST['type_of_file']);
-    $type_of_change = $db->real_escape_string($_POST['type_of_change']);
-    $requested_by = $db->real_escape_string($_SESSION['iuid']);
 
-    $file_upload_dir = "uploads/";
-    $file_paths = array();
-    $valid_upload = true;
-    $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt');
-    if (isset($_FILES['file_upload'])) {
-        $file_array = reArrayFiles($_FILES['file_upload']);
-        foreach ($file_array as $file) {
-            if (!empty($file['tmp_name']) && $file['error'] == UPLOAD_ERR_OK) {
-                $filename = $file['name'];
-                $file_tmpname = $file['tmp_name'];
-                $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-
-                $unique_filename = uniqid() . '_' . $filename;
-
-                if (in_array($file_ext, $allowed_types)) {
-                    $destination = $file_upload_dir . $unique_filename;
-
-                    if (move_uploaded_file($file_tmpname, $destination)) {
-                        $file_paths[] = $destination;
-                    } else {
-                        echo "Error: Failed to move uploaded file.";
-                        $valid_upload = false;
-                    }
-                } else {
-                    echo "Error: Only JPG, JPEG, PNG, GIF, PDF, DOC, DOCX, XLS, XLSX, CSV, TXT files are allowed.";
-                    $valid_upload = false;
-                }
-            } else {
-                echo "Error: File upload error.";
-                $valid_upload = false;
-            }
-        }
-    }
-
-    if ($valid_upload) {
-        $file_paths_json = json_encode($file_paths);
-
-        $sql = "INSERT INTO website_update (date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths) VALUES ('$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths_json')";
-        if ($db->query($sql) === TRUE) {
-            echo "New record created successfully";
-            $update_id = $db->insert_id;
-            $status = "pending";
-            $reason = "";
-            $sql_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type) VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths_json', '$status', '$reason', 'Insert')";
-            if ($db->query($sql_log) === TRUE) {
-                echo "Log entry added successfully";
-            } else {
-                echo "Error adding log entry: " . $db->error;
-            }
-        } else {
-            echo "Error: " . $sql . "<br>" . $db->error;
-        }
-    }
-}
 
 function reArrayFiles(&$file_post)
 {
@@ -156,6 +97,72 @@ function reArrayFiles(&$file_post)
                     </div>
                     <div class="mb-3" style="padding-top: 15px;">
                         <button class="btn btn-primary btn-lg d-block w-100" type="submit">Submit</button>
+                        <?php
+                        if (isset($_POST['title']) && isset($_POST['source']) && isset($_POST['type_of_file']) && isset($_POST['type_of_change'])) {
+                            $date_requested = (new DateTime())->format('Y-m-d H:i:s');
+                            $title = $db->real_escape_string($_POST['title']);
+                            $source = $db->real_escape_string($_POST['source']);
+                            $type_of_file = $db->real_escape_string($_POST['type_of_file']);
+                            $type_of_change = $db->real_escape_string($_POST['type_of_change']);
+                            $requested_by = $db->real_escape_string($_SESSION['iuid']);
+
+                            $file_upload_dir = "uploads/";
+                            $file_paths = array();
+                            $valid_upload = true;
+                            $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt');
+                            if (isset($_FILES['file_upload'])) {
+                                $file_array = reArrayFiles($_FILES['file_upload']);
+                                foreach ($file_array as $file) {
+                                    if (!empty($file['tmp_name']) && $file['error'] == UPLOAD_ERR_OK) {
+                                        $filename = $file['name'];
+                                        $file_tmpname = $file['tmp_name'];
+                                        $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+                                        $unique_filename = uniqid() . '_' . $filename;
+
+                                        if (in_array($file_ext, $allowed_types)) {
+                                            $destination = $file_upload_dir . $unique_filename;
+
+                                            if (move_uploaded_file($file_tmpname, $destination)) {
+                                                $file_paths[] = $destination;
+                                            } else {
+                                                echo "Error: Failed to move uploaded file.";
+                                                $valid_upload = false;
+                                            }
+                                        } else {
+                                            echo "Error: Only JPG, JPEG, PNG, GIF, PDF, DOC, DOCX, XLS, XLSX, CSV, TXT files are allowed.";
+                                            $valid_upload = false;
+                                        }
+                                    } else {
+                                        echo "Error: File upload error.";
+                                        $valid_upload = false;
+                                    }
+                                }
+                            }
+
+                            if ($valid_upload) {
+                                $file_paths_json = json_encode($file_paths);
+
+                                $sql = "INSERT INTO website_update (date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths) VALUES ('$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths_json')";
+                                if ($db->query($sql) === TRUE) {
+                                    echo "New record created successfully";
+                                    $update_id = $db->insert_id;
+                                    $status = "pending";
+                                    $reason = "";
+                                    $sql_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, status, reason, log_type) VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$status', '$reason', 'Insert')";
+                                    if ($db->query($sql_log) === TRUE) {
+                                        echo "Log entry added successfully";
+                                        header("location: website-lists.php");
+                                    } else {
+                                        echo "Error adding log entry: " . $db->error;
+                                    }
+                                } else {
+                                    echo "Error: " . $sql . "<br>" . $db->error;
+                                }
+                            }
+                        }
+
+                        ?>
                     </div>
                 </form>
             </div>

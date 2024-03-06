@@ -37,14 +37,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $type_of_file = $db->real_escape_string($_POST['type_of_file']);
     $type_of_change = $db->real_escape_string($_POST['type_of_change']);
     $user_id = $_SESSION['iuid'];
-
+    $old_files = array();
     if (!empty($_FILES['file_upload']['name'][0])) {
         foreach ($file_paths as $file) {
-            $destination_directory = "failed/";
+            $destination_directory = "failed/uploads/";
             $filename = basename($file);
             $new_file_path = $destination_directory . $filename;
 
             if (rename($file, $new_file_path)) {
+                $old_files[] = $new_file_path;
                 echo "File moved successfully.";
             } else {
                 echo "Error: Failed to move the file.";
@@ -81,8 +82,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             $sql = "UPDATE website_update SET title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', file_paths='$file_paths_json', status = 0 WHERE website_update_id='$update_id'";
             if ($db->query($sql) === TRUE) {
-                echo "Record updated suceecessfully";
-                $sql_log = "INSERT INTO website_update_logs (website_update_id,  title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type, date_requested) VALUES ('$update_id',  '$title', '$source', '$type_of_file', '$type_of_change', '$user_id' , '$file_paths_json', '$status', '$reason', 'Update', '$date_requested')";
+                echo "Record updated successfully";
+                $files = json_encode($old_files);
+                $sql_log = "INSERT INTO website_update_logs (website_update_id,  title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type, date_requested) VALUES ('$update_id',  '$title', '$source', '$type_of_file', '$type_of_change', '$user_id' , '$files', '$status', '$reason', 'Update', '$date_requested')";
                 if ($db->query($sql_log) === TRUE) {
                     echo "Log entry added successfully";
                 } else {
