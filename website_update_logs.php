@@ -40,7 +40,7 @@ $result_logs = $db->query($sql_logs);
     <nav class="navbar navbar-dark navbar-expand-lg fixed-top bg-white portfolio-navbar gradient">
         <div class="container">
             <img src="assets/img/mmwghlogo.png" width="50px" style="margin-right: 10px;">
-            <a class="navbar-brand logo" href="#">IHOMS Website Update</a>
+            <a class="navbar-brand logo" href="#">IMIS Website Update</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">

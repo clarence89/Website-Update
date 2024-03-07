@@ -96,8 +96,8 @@ $result = $db->query($sql);
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>IHOMS Website Update - Data Entry</title>
-    <meta name="description" content="IHOMS Website Update">
+    <title>IMIS Website Update - Website Update Data Entry</title>
+    <meta name="description" content="IMIS Website Update">
     <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/Lato.css">
     <link rel="stylesheet" href="assets/css/custom.css">
@@ -109,7 +109,7 @@ $result = $db->query($sql);
     <nav class="navbar navbar-dark navbar-expand-lg fixed-top bg-white portfolio-navbar gradient">
         <div class="container">
             <img src="assets/img/mmwghlogo.png" width="50px" style="margin-right: 10px;">
-            <a class="navbar-brand logo" href="#">IHOMS Website Update</a>
+            <a class="navbar-brand logo" href="#">IMIS Website Update</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
