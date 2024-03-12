@@ -44,11 +44,12 @@ if (isset($status)) {
         $type_of_change = getStatusName($status); // Function to get the status name based on status code
         $requested_by = $row_update['requested_by'];
         $file_paths = $row_update['file_paths'];
+        $content = $row_update['content']; // New content field
         $created_at = date("Y-m-d H:i:s");
         $log_type = $type_of_change;
 
-        $sql_insert_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, created_at, log_type)
-                           VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths', '$status', '$reason', '$created_at', '$log_type')";
+        $sql_insert_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths, content, status, reason, created_at, log_type)
+                           VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths', '$content', '$status', '$reason', '$created_at', '$log_type')";
         $db->query($sql_insert_log);
     }
 }
@@ -118,6 +119,13 @@ $result = $db->query($sql);
                     <li class="nav-item">
                         <a class="nav-link" href="website-lists.php">Lists</a>
                     </li>
+                    <?php if ($_SESSION['iupriv'] != 3) { ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="website_titles.php">Titles</a>
+                        </li><?php } ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="Logout.php">Logout</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -136,6 +144,8 @@ $result = $db->query($sql);
                             <th>Type of Change</th>
                             <th>Requested By</th>
                             <th>Uploaded Files</th>
+
+                            <th>Content</th> <!-- New column added -->
                             <th>Print Word Document</th>
                             <th>Edit</th>
                             <th>Action</th>
@@ -192,7 +202,10 @@ $result = $db->query($sql);
                                 echo "</ol>";
 
                                 echo "</td>";
+                                echo "<td>" . $row['content'] . "</td>";
                                 echo "<td><a class='btn btn-success' target='_blank' href='generate_print.php?id=" . $row['website_update_id'] . "&filename=" . urlencode($row['title']) . ".docx'>Print</a></td>";
+                                // New column 'content' added
+
                                 if ($row['status'] == 0 || $row['status'] == 3) {
                                     echo "<td><a href='/website_update/update_website_update.php?id=" . $row['website_update_id'] . "' class='btn btn-success m-1'>Edit</a></td>";
                                 } else {
@@ -241,8 +254,7 @@ $result = $db->query($sql);
                                     if ($_SESSION['iupriv'] != 3) {
                                         echo '<button type="submit" name="submit_approval" class="btn btn-success m-1">Done</button>';
                                         echo '<button type="submit" name="submit_cancel" class="btn btn-danger m-1">Decline</button>';
-                                    }
-                                    else{
+                                    } else {
                                         echo '<button type="submit" name="submit_cancel" class="btn btn-danger m-1">Cancel</button>';
                                     }
 
@@ -259,17 +271,17 @@ $result = $db->query($sql);
                                 }
                                 echo "</td>";
                                 if ($_SESSION['iupriv'] != 3) {
-                                echo "<td>";
-                                $sql_logs = "SELECT COUNT(*) AS log_count FROM website_update_logs WHERE website_update_id='" . $row['website_update_id'] . "'";
-                                $result_logs = $db->query($sql_logs);
-                                if ($result_logs) {
-                                    $row_logs = $result_logs->fetch_assoc();
-                                    if ($row_logs['log_count'] > 0) {
-                                        echo "<a class='btn btn-info' href='website_update_logs.php?update_id=" . $row['website_update_id'] . "'>Logs</a>";
+                                    echo "<td>";
+                                    $sql_logs = "SELECT COUNT(*) AS log_count FROM website_update_logs WHERE website_update_id='" . $row['website_update_id'] . "'";
+                                    $result_logs = $db->query($sql_logs);
+                                    if ($result_logs) {
+                                        $row_logs = $result_logs->fetch_assoc();
+                                        if ($row_logs['log_count'] > 0) {
+                                            echo "<a class='btn btn-info' href='website_update_logs.php?update_id=" . $row['website_update_id'] . "'>Logs</a>";
+                                        }
                                     }
+                                    echo "</td>";
                                 }
-                                echo "</td>";
-                            }
                                 echo "</tr>";
                             }
                         } else {

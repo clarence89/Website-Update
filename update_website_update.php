@@ -23,6 +23,7 @@ if (isset($_GET['id'])) {
         $source = $row['source'];
         $type_of_file = $row['type_of_file'];
         $type_of_change = $row['type_of_change'];
+        $content = $row['content'];
         $file_paths = json_decode($row['file_paths']);
         // $reason = $row['reason'];
         $reason = 'Request Update';
@@ -36,6 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $source = $db->real_escape_string($_POST['source']);
     $type_of_file = $db->real_escape_string($_POST['type_of_file']);
     $type_of_change = $db->real_escape_string($_POST['type_of_change']);
+    $content = $db->real_escape_string($_POST['content']);
     $user_id = $_SESSION['iuid'];
     $old_files = array();
     if (!empty($_FILES['file_upload']['name'][0])) {
@@ -80,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $all_file_paths = $new_file_paths;
             $file_paths_json = json_encode($all_file_paths);
 
-            $sql = "UPDATE website_update SET title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', file_paths='$file_paths_json', status = 0 WHERE website_update_id='$update_id'";
+            $sql = "UPDATE website_update SET title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', content='$content', file_paths='$file_paths_json', status = 0 WHERE website_update_id='$update_id'";
             if ($db->query($sql) === TRUE) {
                 echo "Record updated successfully";
                 $files = json_encode($old_files);
@@ -95,7 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
     } else {
-        $sql = "UPDATE website_update SET title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', status = 0 WHERE website_update_id='$update_id'";
+        $sql = "UPDATE website_update SET title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', content='$content', status = 0 WHERE website_update_id='$update_id'";
         if ($db->query($sql) === TRUE) {
             echo "Record updated successfully";
             $sql_log = "INSERT INTO website_update_logs (website_update_id, title, source, type_of_file, type_of_change, requested_by, status, reason, log_type, date_requested) VALUES ('$update_id', '$title', '$source', '$type_of_file', '$type_of_change', '$user_id',  '$status', '$reason' , 'Update', '$date_requested')";
@@ -155,6 +157,13 @@ function reArrayFiles(&$file_post)
                     <li class="nav-item">
                         <a class="nav-link" href="website-lists.php">Lists</a>
                     </li>
+                    <?php if ($_SESSION['iupriv'] != 3) { ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="website_titles.php">Titles</a>
+                        </li><?php } ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="Logout.php">Logout</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -170,8 +179,21 @@ function reArrayFiles(&$file_post)
                     <input type="hidden" name="update_id" value="<?php echo $update_id; ?>">
                     <div class="mb-3">
                         <label class="form-label" for="title">Title</label>
-                        <input class="form-control item" type="text" id="title" name="title" value="<?php echo $title; ?>" required>
+                        <select class="form-control item" id="title" name="title" required>
+                            <option value="">Select Title</option>
+                            <?php
+                            $sql_titles = "SELECT * FROM website_title";
+                            $result_titles = $db->query($sql_titles);
+                            if ($result_titles->num_rows > 0) {
+                                while ($row_title = $result_titles->fetch_assoc()) {
+                                    $selected = ($title == $row_title['title_name']) ? 'selected' : '';
+                                    echo "<option value='" . $row_title['title_name'] . "' $selected>" . $row_title['title_name'] . "</option>";
+                                }
+                            }
+                            ?>
+                        </select>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label" for="source">Source</label>
                         <input class="form-control item" type="text" id="source" name="source" value="<?php echo $source; ?>" required>
@@ -190,6 +212,10 @@ function reArrayFiles(&$file_post)
                             <option value="add_new_content" <?php if ($type_of_change == 'add_new_content') echo 'selected'; ?>>Add New Content</option>
                             <option value="add_new_webpage" <?php if ($type_of_change == 'add_new_webpage') echo 'selected'; ?>>Add New Webpage</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="content">Content</label>
+                        <textarea class="form-control item" id="content" name="content" rows="5" required><?php echo isset($content) ? $content : ''; ?></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="file_upload">File Upload</label>

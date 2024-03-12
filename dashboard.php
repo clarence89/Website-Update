@@ -57,6 +57,13 @@ function reArrayFiles(&$file_post)
                     <li class="nav-item">
                         <a class="nav-link" href="website-lists.php">Lists</a>
                     </li>
+                    <?php if ($_SESSION['iupriv'] != 3) { ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="website_titles.php">Titles</a>
+                        </li><?php } ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="Logout.php">Logout</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -70,7 +77,18 @@ function reArrayFiles(&$file_post)
                 <form method="post" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label class="form-label" for="title">Title</label>
-                        <input class="form-control item" type="text" id="title" name="title" required>
+                        <select class="form-control item" id="title" name="title" required>
+                            <option value="">Select Title</option>
+                            <?php
+                            $sql_titles = "SELECT * FROM website_title";
+                            $result_titles = $db->query($sql_titles);
+                            if ($result_titles->num_rows > 0) {
+                                while ($row_title = $result_titles->fetch_assoc()) {
+                                    echo "<option value='" . $row_title['title_name'] . "'>" . $row_title['title_name'] . "</option>";
+                                }
+                            }
+                            ?>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="source">Source</label>
@@ -92,6 +110,10 @@ function reArrayFiles(&$file_post)
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label" for="content">Content</label>
+                        <textarea class="form-control item" id="content" name="content" rows="5" required></textarea>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label" for="file_upload">File Upload</label>
                         <input class="form-control item" type="file" id="file_upload" name="file_upload[]" multiple>
                     </div>
@@ -104,13 +126,14 @@ function reArrayFiles(&$file_post)
                             $source = $db->real_escape_string($_POST['source']);
                             $type_of_file = $db->real_escape_string($_POST['type_of_file']);
                             $type_of_change = $db->real_escape_string($_POST['type_of_change']);
+                            $content = $db->real_escape_string($_POST['content']);
                             $requested_by = $db->real_escape_string($_SESSION['iuid']);
 
                             $file_upload_dir = "uploads/";
                             $file_paths = array();
                             $valid_upload = true;
                             $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt');
-                            if (isset($_FILES['file_upload'])) {
+                            if (!empty($_FILES['file_upload']['name'][0])) {
                                 $file_array = reArrayFiles($_FILES['file_upload']);
                                 foreach ($file_array as $file) {
                                     if (!empty($file['tmp_name']) && $file['error'] == UPLOAD_ERR_OK) {
@@ -143,7 +166,7 @@ function reArrayFiles(&$file_post)
                             if ($valid_upload) {
                                 $file_paths_json = json_encode($file_paths);
 
-                                $sql = "INSERT INTO website_update (date_requested, title, source, type_of_file, type_of_change, requested_by, file_paths) VALUES ('$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$file_paths_json')";
+                                $sql = "INSERT INTO website_update (date_requested, title, source, type_of_file, type_of_change, requested_by, content, file_paths) VALUES ('$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$content', '$file_paths_json')";
                                 if ($db->query($sql) === TRUE) {
                                     echo "New record created successfully";
                                     $update_id = $db->insert_id;

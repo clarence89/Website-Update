@@ -100,6 +100,22 @@ if (isset($_GET['id']) && isset($_GET['filename'])) {
             padding: 10px;
         }
 
+        #content {
+            position: absolute;
+            top: 560px;
+            left: 450px;
+            width: 680px;
+            height: 300px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: medium;
+            font-weight: bold;
+            padding: 10px;
+            word-wrap: break-word;
+            overflow: hidden;
+            /* Hide content that exceeds the height */
+        }
+
+
         #type_of_change1 {
             position: absolute;
             top: 560px;
@@ -157,6 +173,9 @@ if (isset($_GET['id']) && isset($_GET['filename'])) {
     if ($row['type_of_change'] == "change_to_existing") {
         echo '<p id="type_of_change">✓</p>';
     }
+
+    echo '<p id="content">' . $row['content'] . '</p>';
+
     if ($row['type_of_change'] == "add_new_content") {
         echo '<p id="type_of_change1">✓</p>';
     }

@@ -49,6 +49,13 @@ $result_logs = $db->query($sql_logs);
                     <li class="nav-item">
                         <a class="nav-link" href="website-lists.php">Lists</a>
                     </li>
+<?php if($_SESSION['iupriv'] !=3){ ?>
+<li class="nav-item">
+                        <a class="nav-link" href="website_titles.php">Titles</a>
+                    </li><?php } ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="Logout.php">Logout</a>
+                    </li>
                 </ul>
             </div>
         </div>
