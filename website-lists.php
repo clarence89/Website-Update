@@ -16,14 +16,16 @@ if (isset($_POST['submit_approval'])) {
     $status = 1;
 } elseif (isset($_POST['submit_for_revision'])) {
     $status = 3;
-} elseif (isset($_POST['submit_cancel'])) {
+} elseif (isset($_POST['submit_decline'])) {
     $status = 4;
+} elseif (isset($_POST['submit_cancel'])) {
+    $status = 5;
 }
 
 if (isset($status)) {
     $update_id = $_POST['update_id'];
     $reason = $db->real_escape_string($_POST['reason']);
-
+    echo "qweqw";
     // Fetch existing data from website_update table
     $sql_select_update = "SELECT * FROM website_update WHERE website_update_id = '$update_id'";
     $result_update = $db->query($sql_select_update);
@@ -66,6 +68,8 @@ function getStatusName($status_code)
             return "For Revision";
         case 4:
             return "Declined";
+        case 5:
+            return "Canceled";
         default:
             return "N/A";
     }
@@ -73,18 +77,21 @@ function getStatusName($status_code)
 
 $sql = "SELECT * FROM website_update";
 
-if ($_SESSION['iupriv'] == 3) {
+if ($_SESSION['iupriv'] == 1) {
     $id = $_SESSION['iuid'];
-    $sql .= " WHERE requested_by=$id";
+    $sql .= " WHERE requested_by=$id ORDER BY date_requested DESC";
 } else {
-    $sql .= " ORDER BY CASE status
+    $sql .= " ORDER BY
+                CASE status
                     WHEN 1 THEN 0
                     WHEN 0 THEN 1
                     WHEN 3 THEN 2
                     WHEN 2 THEN 3
                     WHEN 4 THEN 4
                     ELSE 5
-                    END";
+                END,
+                date_requested DESC";
+
 }
 if (!$_SESSION['iuid']) {
     header("location: index.php");
@@ -119,7 +126,7 @@ $result = $db->query($sql);
                     <li class="nav-item">
                         <a class="nav-link" href="website-lists.php">Lists</a>
                     </li>
-                    <?php if ($_SESSION['iupriv'] != 3) { ?>
+                    <?php if ($_SESSION['iupriv'] != 1) { ?>
                         <li class="nav-item">
                             <a class="nav-link" href="website_titles.php">Titles</a>
                         </li><?php } ?>
@@ -138,11 +145,11 @@ $result = $db->query($sql);
                     <thead>
                         <tr>
                             <th>Date Requested</th>
+                            <th>Requested By</th>
                             <th>Title</th>
                             <th>Source</th>
-                            <th>Type of File</th>
-                            <th>Type of Change</th>
-                            <th>Requested By</th>
+                            <!-- <th>Type of File</th>
+                            <th>Type of Change</th> -->
                             <th>Uploaded Files</th>
 
                             <th>Content</th> <!-- New column added -->
@@ -150,7 +157,7 @@ $result = $db->query($sql);
                             <th>Edit</th>
                             <th>Action</th>
                             <?php
-                            if ($_SESSION['iupriv'] != 3) {
+                            if ($_SESSION['iupriv'] != 1) {
                             ?>
                                 <th>Logs</th>
                             <?php
@@ -164,20 +171,7 @@ $result = $db->query($sql);
                             while ($row = $result->fetch_assoc()) {
                                 echo "<tr>";
                                 echo "<td>" . $row['date_requested'] . "</td>";
-                                echo "<td>" . $row['title'] . "</td>";
-                                echo "<td>" . $row['source'] . "</td>";
-                                $type_of_file = $row['type_of_file'];
-                                $parts = explode('_', $type_of_file);
-                                $formatted_type_of_file = ucwords(implode(' ', $parts));
-
-                                echo "<td>" . $formatted_type_of_file . "</td>";
-                                $type_of_change = $row['type_of_change'];
-                                $parts = explode('_', $type_of_change);
-                                $formatted_type_of_change = ucwords(implode(' ', $parts));
-
-                                echo "<td>" . $formatted_type_of_change . "</td>";
                                 $requester_id = $row['requested_by'];
-
                                 $sql_user_list = "SELECT * FROM users WHERE userid = '$requester_id'";
                                 $result_user_list = $db->query($sql_user_list);
 
@@ -191,6 +185,19 @@ $result = $db->query($sql);
                                 } else {
                                     echo "<td>Error: " . $db->error . "</td>";
                                 }
+                                echo "<td>" . $row['title'] . "</td>";
+                                echo "<td>" . $row['source'] . "</td>";
+                                // $type_of_file = $row['type_of_file'];
+                                // $parts = explode('_', $type_of_file);
+                                // $formatted_type_of_file = ucwords(implode(' ', $parts));
+
+                                // echo "<td>" . $formatted_type_of_file . "</td>";
+                                // $type_of_change = $row['type_of_change'];
+                                // $parts = explode('_', $type_of_change);
+                                // $formatted_type_of_change = ucwords(implode(' ', $parts));
+
+                                // echo "<td>" . $formatted_type_of_change . "</td>";
+
 
                                 echo "<td>";
                                 $file_paths = json_decode($row['file_paths']);
@@ -216,10 +223,10 @@ $result = $db->query($sql);
                                     echo '<form method="post">';
                                     echo '<input type="hidden" name="update_id" value="' . $row['website_update_id'] . '">';
                                     echo '<textarea name="reason" class="form-control" placeholder="Remarks"></textarea><br>';
-                                    if ($_SESSION['iupriv'] != 3) {
+                                    if ($_SESSION['iupriv'] != 1) {
                                         echo '<button type="submit" name="submit_for_revision" class="btn btn-warning m-1">For Revision</button>&nbsp;';
                                         echo '<button type="submit" name="submit_for_process" class="btn btn-info m-1">For Processing</button>&nbsp;';
-                                        echo '<button type="submit" name="submit_cancel" class="btn btn-danger m-1">Decline</button>';
+                                        echo '<button type="submit" name="submit_decline" class="btn btn-danger m-1">Decline</button>';
                                     } else {
                                         echo '<button type="submit" name="submit_cancel" class="btn btn-danger m-1">Cancel</button>';
                                     }
@@ -251,9 +258,9 @@ $result = $db->query($sql);
                                     echo '<textarea name="reason" id="reasonTextarea" class="form-control" rows="3"></textarea>';
                                     echo '</div>';
                                     echo '<div class="text-right">';
-                                    if ($_SESSION['iupriv'] != 3) {
+                                    if ($_SESSION['iupriv'] != 1) {
                                         echo '<button type="submit" name="submit_approval" class="btn btn-success m-1">Done</button>';
-                                        echo '<button type="submit" name="submit_cancel" class="btn btn-danger m-1">Decline</button>';
+                                        echo '<button type="submit" name="submit_decline" class="btn btn-danger m-1">Decline</button>';
                                     } else {
                                         echo '<button type="submit" name="submit_cancel" class="btn btn-danger m-1">Cancel</button>';
                                     }
@@ -266,11 +273,17 @@ $result = $db->query($sql);
                                         echo '<p class="font-weight-bold">Remarks:</p>';
                                         echo '<p>' . $row['reason'] . '</p>';
                                     }
+                                } elseif ($row['status'] == 5) {
+                                    echo '<div class="alert alert-danger" role="alert">Canceled</div>';
+                                    if (!empty($row['reason'])) {
+                                        echo '<p class="font-weight-bold">Remarks:</p>';
+                                        echo '<p>' . $row['reason'] . '</p>';
+                                    }
                                 } else {
                                     echo 'N/A';
                                 }
                                 echo "</td>";
-                                if ($_SESSION['iupriv'] != 3) {
+                                if ($_SESSION['iupriv'] != 1) {
                                     echo "<td>";
                                     $sql_logs = "SELECT COUNT(*) AS log_count FROM website_update_logs WHERE website_update_id='" . $row['website_update_id'] . "'";
                                     $result_logs = $db->query($sql_logs);

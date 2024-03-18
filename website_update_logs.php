@@ -49,7 +49,7 @@ $result_logs = $db->query($sql_logs);
                     <li class="nav-item">
                         <a class="nav-link" href="website-lists.php">Lists</a>
                     </li>
-<?php if($_SESSION['iupriv'] !=3){ ?>
+<?php if($_SESSION['iupriv'] != 1){ ?>
 <li class="nav-item">
                         <a class="nav-link" href="website_titles.php">Titles</a>
                     </li><?php } ?>
@@ -72,9 +72,11 @@ $result_logs = $db->query($sql_logs);
                     <th>Source</th>
                     <th>Type of File</th>
                     <th>Type of Change</th>
+                    <th>Content</th>
                     <th>Status</th>
                     <th>Reason</th>
                     <th>Change Type</th>
+                    <th>Files</th>
                 </tr>
             </thead>
             <tbody>
@@ -88,6 +90,7 @@ $result_logs = $db->query($sql_logs);
                         echo "<td>" . $row['source'] . "</td>";
                         echo "<td>" . $row['type_of_file'] . "</td>";
                         echo "<td>" . $row['type_of_change'] . "</td>";
+                        echo "<td>" . $row['content'] . "</td>";
                         echo "<td>" . $row['status'] . "</td>";
                         echo "<td>" . $row['reason'] . "</td>";
                         echo "<td>" . $row['log_type'] . "</td>";

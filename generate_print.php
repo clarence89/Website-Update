@@ -155,6 +155,24 @@ if (isset($_GET['id']) && isset($_GET['filename'])) {
             font-weight: bold;
             padding: 10px;
         }
+        #user {
+            position: absolute;
+            top: 1020px;
+            left: 200px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: x-large;
+            font-weight: bold;
+            padding: 10px;
+        }
+        #created_at {
+            position: absolute;
+            top: 1350px;
+            left: 260px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: x-large;
+            font-weight: bold;
+            padding: 10px;
+        }
     </style>
 </head>
 
@@ -187,6 +205,33 @@ if (isset($_GET['id']) && isset($_GET['filename'])) {
     }
     if ($row['status2'] == 2) {
         echo '<p id="status1">✓</p>';
+    }
+    $requester_id = $row['requested_by'];
+    $sql_user_list = "SELECT * FROM users WHERE userid = '$requester_id'";
+    $result_user_list = $db->query($sql_user_list);
+
+    if ($result_user_list) {
+        if ($result_user_list->num_rows > 0) {
+            $user_row = $result_user_list->fetch_assoc();
+            echo "<p id='user'>" . $user_row['fname'] . " " . $user_row['lname'] . "</p>";
+        } else {
+            echo "<p id='user'>User Not Found</p>";
+        }
+    } else {
+        echo "<p id='user'>Error: " . $db->error . "</p>";
+    }
+    $update_id = $db->real_escape_string($row['website_update_id']);
+
+    $sql_logs = "SELECT wul.*, u.fname, u.lname FROM website_update_logs AS wul LEFT JOIN users AS u ON wul.requested_by = u.userid WHERE wul.website_update_id = '$update_id' ORDER BY wul.created_at DESC LIMIT 1";
+    $result_logs = $db->query($sql_logs);
+
+    if ($result_logs->num_rows > 0) {
+
+        while ($row = $result_logs->fetch_assoc()) {
+            echo "<p id='created_at'>" . date('Y-m-d', strtotime($row['created_at'])) . "</p>";
+        }
+    } else {
+
     }
     ?>
 </body>

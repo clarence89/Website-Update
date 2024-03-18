@@ -25,7 +25,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 // Fetching website titles
-$sql = "SELECT * FROM website_title";
+$sql = "SELECT * FROM website_title WHERE status = 0";
 $result = $db->query($sql);
 ?>
 <!DOCTYPE html>
@@ -55,7 +55,7 @@ $result = $db->query($sql);
                     <li class="nav-item">
                         <a class="nav-link" href="website-lists.php">Lists</a>
                     </li>
-                    <?php if ($_SESSION['iupriv'] != 3) { ?>
+                    <?php if ($_SESSION['iupriv'] != 1) { ?>
                         <li class="nav-item">
                             <a class="nav-link" href="website_titles.php">Titles</a>
                         </li><?php } ?>

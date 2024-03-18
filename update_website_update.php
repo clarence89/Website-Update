@@ -39,7 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $type_of_change = $db->real_escape_string($_POST['type_of_change']);
     $content = $db->real_escape_string($_POST['content']);
     $user_id = $_SESSION['iuid'];
-    $old_files = array();
+    // $old_files = array();
     if (!empty($_FILES['file_upload']['name'][0])) {
         foreach ($file_paths as $file) {
             $destination_directory = "failed/uploads/";
@@ -47,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $new_file_path = $destination_directory . $filename;
 
             if (rename($file, $new_file_path)) {
-                $old_files[] = $new_file_path;
+                // $old_files[] = $new_file_path;
                 echo "File moved successfully.";
             } else {
                 echo "Error: Failed to move the file.";
@@ -85,8 +85,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $sql = "UPDATE website_update SET title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', content='$content', file_paths='$file_paths_json', status = 0 WHERE website_update_id='$update_id'";
             if ($db->query($sql) === TRUE) {
                 echo "Record updated successfully";
-                $files = json_encode($old_files);
-                $sql_log = "INSERT INTO website_update_logs (website_update_id,  title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type, date_requested) VALUES ('$update_id',  '$title', '$source', '$type_of_file', '$type_of_change', '$user_id' , '$files', '$status', '$reason', 'Update', '$date_requested')";
+                // $files = json_encode($old_files);
+                $sql_log = "INSERT INTO website_update_logs (website_update_id,  title, source, type_of_file, type_of_change, requested_by, file_paths, status, reason, log_type, date_requested, content) VALUES ('$update_id',  '$title', '$source', '$type_of_file', '$type_of_change', '$user_id' , '$file_paths_json', '$status', '$reason', 'Update With File', '$date_requested', '$content')";
                 if ($db->query($sql_log) === TRUE) {
                     echo "Log entry added successfully";
                 } else {
@@ -100,7 +100,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sql = "UPDATE website_update SET title='$title', source='$source', type_of_file='$type_of_file', type_of_change='$type_of_change', content='$content', status = 0 WHERE website_update_id='$update_id'";
         if ($db->query($sql) === TRUE) {
             echo "Record updated successfully";
-            $sql_log = "INSERT INTO website_update_logs (website_update_id, title, source, type_of_file, type_of_change, requested_by, status, reason, log_type, date_requested) VALUES ('$update_id', '$title', '$source', '$type_of_file', '$type_of_change', '$user_id',  '$status', '$reason' , 'Update', '$date_requested')";
+            $sql_log = "INSERT INTO website_update_logs (website_update_id, title, source, type_of_file, type_of_change, requested_by, status, reason, log_type, date_requested, content) VALUES ('$update_id', '$title', '$source', '$type_of_file', '$type_of_change', '$user_id',  '$status', '$reason' , 'Update Without File', '$date_requested', '$content')";
             if ($db->query($sql_log) === TRUE) {
                 echo "Log entry added successfully";
             } else {
@@ -157,7 +157,7 @@ function reArrayFiles(&$file_post)
                     <li class="nav-item">
                         <a class="nav-link" href="website-lists.php">Lists</a>
                     </li>
-                    <?php if ($_SESSION['iupriv'] != 3) { ?>
+                    <?php if ($_SESSION['iupriv'] != 1) { ?>
                         <li class="nav-item">
                             <a class="nav-link" href="website_titles.php">Titles</a>
                         </li><?php } ?>
@@ -182,7 +182,7 @@ function reArrayFiles(&$file_post)
                         <select class="form-control item" id="title" name="title" required>
                             <option value="">Select Title</option>
                             <?php
-                            $sql_titles = "SELECT * FROM website_title";
+                            $sql_titles = "SELECT * FROM website_title WHERE status = 0";
                             $result_titles = $db->query($sql_titles);
                             if ($result_titles->num_rows > 0) {
                                 while ($row_title = $result_titles->fetch_assoc()) {

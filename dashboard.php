@@ -57,7 +57,7 @@ function reArrayFiles(&$file_post)
                     <li class="nav-item">
                         <a class="nav-link" href="website-lists.php">Lists</a>
                     </li>
-                    <?php if ($_SESSION['iupriv'] != 3) { ?>
+                    <?php if ($_SESSION['iupriv'] != 1) { ?>
                         <li class="nav-item">
                             <a class="nav-link" href="website_titles.php">Titles</a>
                         </li><?php } ?>
@@ -80,7 +80,7 @@ function reArrayFiles(&$file_post)
                         <select class="form-control item" id="title" name="title" required>
                             <option value="">Select Title</option>
                             <?php
-                            $sql_titles = "SELECT * FROM website_title";
+                            $sql_titles = "SELECT * FROM website_title WHERE status = 0";
                             $result_titles = $db->query($sql_titles);
                             if ($result_titles->num_rows > 0) {
                                 while ($row_title = $result_titles->fetch_assoc()) {
@@ -172,7 +172,7 @@ function reArrayFiles(&$file_post)
                                     $update_id = $db->insert_id;
                                     $status = "pending";
                                     $reason = "";
-                                    $sql_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, status, reason, log_type) VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$status', '$reason', 'Insert')";
+                                    $sql_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, status, reason, log_type, file_paths, content) VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$status', '$reason', 'Insert', '$file_paths_json', '$content')";
                                     if ($db->query($sql_log) === TRUE) {
                                         echo "Log entry added successfully";
                                         header("location: website-lists.php");

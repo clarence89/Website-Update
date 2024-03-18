@@ -17,11 +17,10 @@ if (!isset($_GET['id'])) {
 
 $id = $db->real_escape_string($_GET['id']);
 
-$sql = "DELETE FROM website_title WHERE id='$id'";
-
-if ($db->query($sql) === TRUE) {
-    echo "Record deleted successfully";
+    $sql = "UPDATE website_title SET status=1 WHERE id='$id'";
+    if ($db->query($sql) === TRUE) {
+    echo "Record updated successfully";
     header('location: website_titles.php');
-} else {
-    echo "Error deleting record: " . $db->error;
-}
+    } else {
+        echo "Error updating record: " . $db->error;
+    }

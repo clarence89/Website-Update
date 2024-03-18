@@ -58,7 +58,7 @@ $row = $result->fetch_assoc();
                     <li class="nav-item">
                         <a class="nav-link" href="website-lists.php">Lists</a>
                     </li>
-<?php if($_SESSION['iupriv'] !=3){ ?>
+<?php if($_SESSION['iupriv'] != 1){ ?>
 <li class="nav-item">
                         <a class="nav-link" href="website_titles.php">Titles</a>
                     </li><?php } ?>
