@@ -5,9 +5,10 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 include("config.php");
 include("auth.php");
-
+ob_start();
 if (!$_SESSION['iuid']) {
     header("location: index.php");
+    ob_end_flush();;
 }
 
 if (isset($_GET['id'])) {
@@ -111,6 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
     header("location: website-lists.php");
+    ob_end_flush();;
 }
 
 function reArrayFiles(&$file_post)

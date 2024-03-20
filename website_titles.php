@@ -5,9 +5,10 @@ include("auth.php");
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+ob_start();
 if (!isset($_SESSION['iuid'])) {
     header("location: index.php");
-    exit();
+    ob_end_flush();;
 }
 
 // Insertion
@@ -18,7 +19,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo "New record created successfully";
         // Redirect to avoid resubmission
         header("Location: " . $_SERVER['PHP_SELF']);
-        exit();
+        ob_end_flush();;
     } else {
         echo "Error: " . $sql . "<br>" . $db->error;
     }

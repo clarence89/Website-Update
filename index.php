@@ -1,5 +1,6 @@
 <?php
 include("config.php");
+ob_start();
 include("auth.php");
 if ($_SESSION['iuid']) {
     if ($_SESSION['iupriv'] == 1)
@@ -8,7 +9,7 @@ if ($_SESSION['iuid']) {
         header("location: dashboard.php");
     else
         header("location: dashboard.php");
-    exit();
+    ob_end_flush();;
 }
 if ($_POST['username'] && $_POST['password']) {
     if ($_SESSION['logctr'] > 10)
@@ -30,7 +31,7 @@ if ($_POST['username'] && $_POST['password']) {
                     setcookie('hrep', base64_encode($_SESSION['iupriv']), time() + (3600 * 60), '/');
                 }
                 header("location: index.php");
-                exit();
+                ob_end_flush();;
             } else {
                 $errmsg = "Incorrect password";
             }

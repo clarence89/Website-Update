@@ -1,5 +1,6 @@
 <?php
 session_start();
+ob_start();
 include("config.php");
 include("auth.php");
 ini_set('display_errors', 1);
@@ -7,6 +8,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 if (!$_SESSION['iuid']) {
     header("location: index.php");
+    ob_end_flush();;
 }
 
 $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt');
@@ -168,14 +170,13 @@ function reArrayFiles(&$file_post)
 
                                 $sql = "INSERT INTO website_update (date_requested, title, source, type_of_file, type_of_change, requested_by, content, file_paths) VALUES ('$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$content', '$file_paths_json')";
                                 if ($db->query($sql) === TRUE) {
-                                    echo "New record created successfully";
                                     $update_id = $db->insert_id;
                                     $status = "pending";
                                     $reason = "";
                                     $sql_log = "INSERT INTO website_update_logs (website_update_id, date_requested, title, source, type_of_file, type_of_change, requested_by, status, reason, log_type, file_paths, content) VALUES ('$update_id', '$date_requested', '$title', '$source', '$type_of_file', '$type_of_change', '$requested_by', '$status', '$reason', 'Insert', '$file_paths_json', '$content')";
                                     if ($db->query($sql_log) === TRUE) {
-                                        echo "Log entry added successfully";
                                         header("location: website-lists.php");
+                                        ob_end_flush();;
                                     } else {
                                         echo "Error adding log entry: " . $db->error;
                                     }

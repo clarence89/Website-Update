@@ -6,8 +6,10 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 include("config.php");
 include("auth.php");
+ob_start();
 if (!$_SESSION['iuid']) {
     header("location: index.php");
+    ob_end_flush();;
 }
 
 if (isset($_POST['submit_approval'])) {
@@ -95,6 +97,7 @@ if ($_SESSION['iupriv'] == 1) {
 }
 if (!$_SESSION['iuid']) {
     header("location: index.php");
+    ob_end_flush();;
 }
 $result = $db->query($sql);
 ?>
@@ -204,7 +207,10 @@ $result = $db->query($sql);
                                 echo "<ol>";
                                 foreach ($file_paths as $path) {
                                     $filename = basename($path);
-                                    echo "<li><a class='my-3 py-3' href='$path' download>$filename</a></li>";
+
+                                    $parts = explode('_', $filename);
+                                    $filename_modified = implode('_', array_slice($parts, 1));
+                                    echo "<li><a class='my-3 py-3' href='$path' download>$filename_modified</a></li>";
                                 }
                                 echo "</ol>";
 
@@ -220,6 +226,7 @@ $result = $db->query($sql);
                                 }
                                 echo "<td>";
                                 if ($row['status'] == 0) {
+                                    echo '<div class="alert alert-info" role="alert">Pending</div>';
                                     echo '<form method="post">';
                                     echo '<input type="hidden" name="update_id" value="' . $row['website_update_id'] . '">';
                                     echo '<textarea name="reason" class="form-control" placeholder="Remarks"></textarea><br>';

@@ -8,11 +8,12 @@ error_reporting(E_ALL);
 
 if (!$_SESSION['iuid']) {
     header("location: index.php");
+    ob_end_flush();;
 }
 
 if (!isset($_GET['id'])) {
     echo "Website title ID not provided.";
-    exit();
+    ob_end_flush();;
 }
 
 $id = $db->real_escape_string($_GET['id']);

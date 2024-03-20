@@ -6,15 +6,16 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 include("config.php");
 include("auth.php");
+ob_start();
 
 if (!isset($_SESSION['iuid'])) {
     header("location: index.php");
-    exit();
+    ob_end_flush();;
 }
 
 if (!isset($_GET['update_id'])) {
     echo "Update ID not provided.";
-    exit();
+    ob_end_flush();;
 }
 
 $update_id = $db->real_escape_string($_GET['update_id']);
